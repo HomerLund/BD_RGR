@@ -1,8 +1,9 @@
+from tabulate import tabulate
 class View:
-    def show_table(self, rows):
-        print("Tasks:")
-        for row in rows:
-            print(f"factory_id: {row[0]}, name: {row[1]}, specialization: {row[2]}, address: {row[3]}")
+    def show_table(self, rows, attributes_name, table):
+        print(table + ":") 
+        table = tabulate(rows, attributes_name, tablefmt="grid")
+        print(table)
 
     def get_table_input(self, attributes_name, table):
         attributes = []      
@@ -12,8 +13,8 @@ class View:
         
         return attributes
 
-    def get_row_id(self):
-        return int(input("Enter Factory ID: "))
+    def get_row_id(self, table):
+        return int(input("Enter " + table + " ID: "))
 
     def show_message(self, message):
         print(message)

@@ -6,9 +6,10 @@ class Controller:
     def __init__(self):
         self.model = Model()
         self.view = View()
-        self.table = ["Factory", "Device", "Component", "Component_category", "Buy"]
+        self.table = ["Factory", "Device", "Components", "Component_category", "Buy"]
         self.attributes_name = []
         self.current_table = "None"
+        self.PK = 0
         
 
     def run(self):
@@ -63,7 +64,9 @@ class Controller:
     def get_attributes(self):
         self.attributes_name = self.model.get_attributes(self.current_table)
         
+        self.PK = self.attributes_name[0]
         if (self.attributes_name[0][-2:] == "id"):
+            
             return self.attributes_name[1:]
         else:
             return self.attributes_name
@@ -72,26 +75,27 @@ class Controller:
         try:
             self.attributes_name = self.get_attributes()
             attributes = self.view.get_table_input(self.attributes_name, self.current_table)
-            self.model.add_row(attributes, self.attributes_name)
-            self.view.show_message("Factory added successfully!")
+            self.model.add_row(attributes, self.attributes_name, self.current_table)
+            self.view.show_message(self.current_table + " added successfully!")
         except Exception as e:     
             print(f"Error: {e}")
             self.model.query_rollback()
 
     def view_table(self):
         try:
+            self.attributes_name = self.get_attributes()
             rows = self.model.get_all_rows(self.current_table)
-            self.view.show_table(rows)
+            self.view.show_table(rows, self.attributes_name, self.current_table)
         except Exception as e:     
             print(f"Error: {e}")
             self.model.query_rollback()
 
     def update_row(self):
         try:
-            row_id = self.view.get_row_id()
+            row_id = self.view.get_row_id(self.current_table)
             self.attributes_name = self.get_attributes()
             attributes = self.view.get_table_input(self.attributes_name, self.current_table)
-            self.model.update_row(row_id, attributes, self.attributes_name)
+            self.model.update_row(row_id, self.PK, attributes, self.attributes_name, self.current_table)
             self.view.show_message("Factory updated successfully!")
         except Exception as e:     
             print(f"Error: {e}")
@@ -99,9 +103,10 @@ class Controller:
             
     def delete_row(self):
         try:
-            factory_id = self.view.get_row_id()
-            self.model.delete_row(factory_id)
-            self.view.show_message("Factory deleted successfully!")
+            row_id = self.view.get_row_id(self.current_table)
+            self.attributes_name = self.get_attributes()
+            self.model.delete_row(row_id, self.PK, self.current_table)
+            self.view.show_message(self.current_table + " deleted successfully!")
         except Exception as e:     
             print(f"Error: {e}")
             self.model.query_rollback()

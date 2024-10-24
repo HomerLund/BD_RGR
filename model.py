@@ -45,7 +45,7 @@ class Model:
         c.execute(f"SELECT * FROM " + table.lower() + " LIMIT 0")
         return [desc[0] for desc in c.description]
         
-    def add_row(self, attributes, attributes_name):
+    def add_row(self, attributes, attributes_name, table):
         c = self.conn.cursor()
         quary = ''
         s = ''
@@ -55,7 +55,7 @@ class Model:
         quary = quary.rstrip(', ')
         s = s.rstrip(', ')
         
-        query = 'INSERT INTO factory (' + quary + ') VALUES (' + s + ')'
+        query = 'INSERT INTO ' + table.lower() + ' (' + quary + ') VALUES (' + s + ')'
         values = attributes
         
         c.execute(query, values)
@@ -66,15 +66,15 @@ class Model:
         c.execute('SELECT * FROM ' + table.lower())
         return c.fetchall()
 
-    def update_row(self, row_id, attributes, attributes_name):
+    def update_row(self, row_id, PK, attributes, attributes_name, table):
         c = self.conn.cursor()
         
         quary = ''
         for name in attributes_name:
             quary += name + '=%s, '
-        quary = quary.rstrip('=%s, ')
+        quary = quary.rstrip(', ')
         
-        query = 'UPDATE factory SET name=%s, specialization=%s, address=%s WHERE factory_id=%s'
+        query = 'UPDATE ' + table.lower() + ' SET ' + quary + ' WHERE ' + PK + '=%s'
         values = attributes
         values.append(row_id)
 
@@ -82,9 +82,9 @@ class Model:
         self.conn.commit()
           
 
-    def delete_row(self, factory_id):
+    def delete_row(self, row_id, PK, table):
         c = self.conn.cursor()
-        c.execute('DELETE FROM factory WHERE factory_id=%s', (factory_id,))
+        c.execute('DELETE FROM ' + table.lower() + ' WHERE ' + PK + '=%s', (row_id,))
         self.conn.commit()
 
     def query_rollback(self):
