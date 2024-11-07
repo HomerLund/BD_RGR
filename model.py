@@ -61,6 +61,21 @@ class Model:
         c.execute(query, values)
         self.conn.commit()
 
+    def get_DeviceOfFactory(self, FK):
+        c = self.conn.cursor()
+        query = """ SELECT d.device_id, d.name, f.factory_id, f.name, f.address FROM device d
+                    JOIN factory f ON d.factory_id = f.factory_id
+                    WHERE f.factory_id = """ + str(FK) + """
+                    GROUP BY f.address
+                    ORDER BY d.device_id ASC;"""
+        c.execute(query)
+        
+        rows = c.fetchall()
+    
+        column_names = [desc[0] for desc in c.description]
+        
+        return rows, column_names
+    
     def get_all_rows(self, table):
         c = self.conn.cursor()
         c.execute('SELECT * FROM ' + table.lower())
@@ -85,6 +100,37 @@ class Model:
     def delete_row(self, row_id, PK, table):
         c = self.conn.cursor()
         c.execute('DELETE FROM ' + table.lower() + ' WHERE ' + PK + '=%s', (row_id,))
+        self.conn.commit()
+        
+    def reset_identity(self, table):
+        c = self.conn.cursor()
+        c.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = %s 
+            AND is_identity = 'YES'
+            ORDER BY ordinal_position 
+            LIMIT 1;
+        """, (table.lower(),))
+        result = c.fetchone()
+        
+        if result:
+            identity_column = result[0]
+            c.execute(f"ALTER TABLE {table} ALTER COLUMN {identity_column} RESTART WITH 1;")
+
+
+    
+    def delete_table(self, table):
+        c = self.conn.cursor()
+        query = 'TRUNCATE TABLE ' + table.lower() + ' CASCADE'
+        c.execute(query)
+        self.reset_identity(table)
+        self.conn.commit()
+        
+    def random_table(self, counts, table):
+        c = self.conn.cursor()
+        query = 'CALL random_' + table.lower() + '(' + str(counts) + ')'
+        c.execute(query)
         self.conn.commit()
 
     def query_rollback(self):

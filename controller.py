@@ -24,23 +24,31 @@ class Controller:
             elif choice == 4:
                 self.delete_row()
             elif choice == 5:
+                self.delete_table()
+            elif choice == 6:
+                self.random_table()
+            elif choice == 7:
                 break
     
-    def show_menu_tabele(self):
+    def show_menu_table(self):
         while(True):
             self.view.show_message("\nMenu:") 
             self.view.show_message("1. Factory")
             self.view.show_message("2. Device")
             self.view.show_message("3. Components")
             self.view.show_message("4. Component_category")
-            self.view.show_message("5. Buy")      
+            self.view.show_message("5. Buy")  
+            self.view.show_message("6. Search")  
         
-            number_of_table = int(input("Enter your choice: ")) - 1
+            
+            number_of_table = self.view.enter_choice("Enter your choice: ") - 1
             if (number_of_table >= 0 and number_of_table < 5):   
                 self.current_table = self.table[number_of_table]
                 break
-            else:
+            elif (number_of_table != 5):
                 self.view.show_message("\nError: not correct choice! Try again!")
+            else:
+                break
     
     def show_menu_options(self):
         while(True):
@@ -48,32 +56,71 @@ class Controller:
             self.view.show_message("1. Add " + self.current_table)
             self.view.show_message("2. View " + self.current_table)
             self.view.show_message("3. Update " + self.current_table)
-            self.view.show_message("4. Delete " + self.current_table)
-            self.view.show_message("5. Quit")
-        
-            option = int(input("Enter your choice: "))
-            if (option >= 1 and option <= 5 ):   
+            self.view.show_message("4. Delete row " + self.current_table)
+            self.view.show_message("5. Delete table " + self.current_table)
+            self.view.show_message("6. Random " + self.current_table)
+            self.view.show_message("7. Quit")
+
+            option = self.view.enter_choice("Enter your choice: ")
+            if (option >= 1 and option <= 7 ):   
                 return option
             else:
                 self.view.show_message("\nError: not correct choice! Try again!")
             
+    def show_menu_search(self):
+        while(True):
+            self.view.show_message("\nMenu:")
+            self.view.show_message("1. Search the device manufactured by the factory ")
+            
+            option = self.view.enter_choice("Enter your choice: ")
+            if (option == 1):
+                self.get_DeviceOfFactory()
+                break
+            else:
+                self.view.show_message("\nError: not correct choice! Try again!")
+                
     def show_menu(self):
-        self.show_menu_tabele()
-        return self.show_menu_options()
+        try:
+            self.current_table = "None"
+            self.show_menu_table()
+            if (self.current_table != "None"):
+                return self.show_menu_options()
+            else:
+                self.show_menu_search()
+                return 0
+        except Exception as e:     
+            print(f"Error: {e}")
 
+    def get_DeviceOfFactory(self):
+        try:
+            self.current_table = "device"
+            FK = self.view.get_DeviceOfFactory()
+            rows, self.attributes_name = self.model.get_DeviceOfFactory(FK)
+            self.view.show_table(rows, self.attributes_name, "Table")
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
+    
     def get_attributes(self):
         self.attributes_name = self.model.get_attributes(self.current_table)
         
         self.PK = self.attributes_name[0]
-        if (self.attributes_name[0][-2:] == "id"):
-            
-            return self.attributes_name[1:]
-        else:
-            return self.attributes_name
+        return self.attributes_name
+        
+    def random_table(self):
+        try:
+            self.attributes_name = self.get_attributes()
+            self.model.random_table(self.attributes_name, self.PK, self.current_table)
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
         
     def add_row(self):
         try:
             self.attributes_name = self.get_attributes()
+            if (self.attributes_name[0][-2:] == "id"):
+                self.attributes_name = self.attributes_name[1:]
+             
             attributes = self.view.get_table_input(self.attributes_name, self.current_table)
             self.model.add_row(attributes, self.attributes_name, self.current_table)
             self.view.show_message(self.current_table + " added successfully!")
@@ -107,6 +154,28 @@ class Controller:
             self.attributes_name = self.get_attributes()
             self.model.delete_row(row_id, self.PK, self.current_table)
             self.view.show_message(self.current_table + " deleted successfully!")
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
+            
+    def delete_table(self):
+        try:
+            if (self.view.confirm_delete_table()): 
+                
+                self.model.delete_table(self.current_table)
+                self.view.show_message("Delete table successfully")
+            else:
+                self.view.show_message("Delete table canceled")
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
+            
+    def random_table(self):
+        try:
+            counts = self.view.random_table()
+            self.model.random_table(counts, self.current_table)
+            self.view.show_message("Random successfully!")
+            
         except Exception as e:     
             print(f"Error: {e}")
             self.model.query_rollback()
