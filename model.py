@@ -1,5 +1,5 @@
 import psycopg
-
+import time
 
 class Model:
     def __init__(self):
@@ -10,35 +10,6 @@ class Model:
             host='localhost',
             port=5432
         )
-        self.create_table()
-
-    def create_table(self):
-        c = self.conn.cursor()
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS factory (
-                factory_id SERIAL PRIMARY KEY,
-                name VARCHAR(30) NOT NULL,
-                specialization VARCHAR(60) NOT NULL,
-                address VARCHAR(70) NOT NULL UNIQUE
-            )
-        ''')
-
-        # Check if the table exists
-        c.execute("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tasks')")
-        table_exists = c.fetchone()[0]
-
-        if not table_exists:
-            # Table does not exist, so create it
-            c.execute('''
-                CREATE TABLE tasks (
-                    factory_id SERIAL PRIMARY KEY,
-                    name VARCHAR(30) NOT NULL,
-                    specialization VARCHAR(60) NOT NULL,
-                    address VARCHAR(70) NOT NULL UNIQUE        
-                )
-            ''')
-
-        self.conn.commit()
 
     def get_attributes(self, table):
         c = self.conn.cursor()
@@ -63,18 +34,67 @@ class Model:
 
     def get_DeviceOfFactory(self, FK):
         c = self.conn.cursor()
-        query = """ SELECT d.device_id, d.name, f.factory_id, f.name, f.address FROM device d
+        
+        start_time = time.time()
+        
+        query = """ SELECT f.factory_id,  f.name, f.address, d.name, COUNT(*) as count FROM device d
                     JOIN factory f ON d.factory_id = f.factory_id
                     WHERE f.factory_id = """ + str(FK) + """
-                    GROUP BY f.address
-                    ORDER BY d.device_id ASC;"""
+                    GROUP BY f.factory_id, d.name
+                    ORDER BY f.factory_id ASC;"""
         c.execute(query)
+        
+        end_time = time.time()
+        duration = end_time - start_time
         
         rows = c.fetchall()
     
         column_names = [desc[0] for desc in c.description]
         
-        return rows, column_names
+        return rows, column_names, duration * 1000
+    
+    def get_ComponentsOfDevice(self, FK):
+        c = self.conn.cursor()
+        
+        start_time = time.time()
+        
+        query = """ SELECT d.device_id,  d.name, c.name, AVG(c.weight) as avg_weight FROM device d
+                    JOIN components c ON d.device_id = c.device_id
+                    WHERE d.device_id = """ + str(FK) + """
+                    GROUP BY d.device_id, c.name
+                    ORDER BY d.device_id ASC;"""
+        c.execute(query)
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        rows = c.fetchall()
+    
+        column_names = [desc[0] for desc in c.description]
+        
+        return rows, column_names, duration * 1000
+    
+    def get_BuyOfComponents(self, first_date, second_date, FK):
+        c = self.conn.cursor()
+        
+        start_time = time.time()
+        
+        query = """ SELECT f.factory_id,  f.name, c.component_id, c.name, b.date, b.price FROM buy b
+                    JOIN factory f ON b.factory_id = f.factory_id
+                    JOIN components c ON b.component_id = c.component_id
+                    WHERE b.date BETWEEN '""" + first_date + """' AND '""" + second_date + """'
+                    AND f.factory_id = """ + str(FK) + """
+                    ORDER BY f.factory_id ASC;"""
+        c.execute(query)
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        rows = c.fetchall()
+    
+        column_names = [desc[0] for desc in c.description]
+        
+        return rows, column_names, duration * 1000
     
     def get_all_rows(self, table):
         c = self.conn.cursor()

@@ -14,6 +14,7 @@ class Controller:
 
     def run(self):
         while True:
+            self.model.query_rollback()
             choice = self.show_menu()
             if choice == 1:
                 self.add_row()
@@ -71,10 +72,18 @@ class Controller:
         while(True):
             self.view.show_message("\nMenu:")
             self.view.show_message("1. Search the device manufactured by the factory ")
+            self.view.show_message("2. Search the components of the device ")
+            self.view.show_message("3. Search purchase of components by the plant for a certain period of time ")
             
             option = self.view.enter_choice("Enter your choice: ")
             if (option == 1):
                 self.get_DeviceOfFactory()
+                break
+            elif (option == 2):
+                self.get_ComponentsOfDevice()
+                break
+            elif (option == 3):
+                self.get_BuyOfComponents()
                 break
             else:
                 self.view.show_message("\nError: not correct choice! Try again!")
@@ -90,13 +99,35 @@ class Controller:
                 return 0
         except Exception as e:     
             print(f"Error: {e}")
+            self.model.query_rollback()
 
     def get_DeviceOfFactory(self):
         try:
-            self.current_table = "device"
             FK = self.view.get_DeviceOfFactory()
-            rows, self.attributes_name = self.model.get_DeviceOfFactory(FK)
+            rows, self.attributes_name, duration = self.model.get_DeviceOfFactory(FK)
             self.view.show_table(rows, self.attributes_name, "Table")
+            self.view.show_message("duration = " + str(duration) + " milliseconds")
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
+            
+    def get_ComponentsOfDevice(self):
+        try:
+            FK = self.view.get_ComponentsOfDevice()
+            rows, self.attributes_name, duration = self.model.get_ComponentsOfDevice(FK)
+            self.view.show_table(rows, self.attributes_name, "Table")
+            self.view.show_message("duration = " + str(duration) + " milliseconds")
+        except Exception as e:     
+            print(f"Error: {e}")
+            self.model.query_rollback()
+            
+    def get_BuyOfComponents(self):
+        try:
+            FK = self.view.get_DeviceOfFactory()
+            first_date, second_date = self.view.get_BuyOfComponents()
+            rows, self.attributes_name, duration = self.model.get_BuyOfComponents(first_date, second_date, FK)
+            self.view.show_table(rows, self.attributes_name, "Table")
+            self.view.show_message("duration = " + str(duration) + " milliseconds")
         except Exception as e:     
             print(f"Error: {e}")
             self.model.query_rollback()
@@ -141,6 +172,8 @@ class Controller:
         try:
             row_id = self.view.get_row_id(self.current_table)
             self.attributes_name = self.get_attributes()
+            if (self.attributes_name[0][-2:] == "id"):
+                self.attributes_name = self.attributes_name[1:]
             attributes = self.view.get_table_input(self.attributes_name, self.current_table)
             self.model.update_row(row_id, self.PK, attributes, self.attributes_name, self.current_table)
             self.view.show_message("Factory updated successfully!")

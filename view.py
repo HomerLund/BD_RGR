@@ -16,6 +16,12 @@ class View:
     def get_DeviceOfFactory(self):
         return int(input("Enter factory_id: "))
     
+    def get_ComponentsOfDevice(self):
+        return int(input("Enter device_id: "))
+    
+    def get_BuyOfComponents(self):
+        return str(input("Enter first date: ")), str(input("Enter second date: "))
+    
     def get_row_id(self, table):
         return int(input("Enter " + table + " ID: "))
     
